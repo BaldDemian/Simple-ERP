@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nju.edu.erp.dao.SaleReturnSheetDao">
+    <insert id="save" parameterType="SaleReturnSheetPO">
+        insert into sale_return_sheet (id, sale_sheet_id, operator, `state`, total_amount, remark, create_time)
+        values (#{id},#{saleSheetId},#{operator},#{state},#{totalAmount},#{remark}, #{createTime})
+    </insert>
+
+    <update id="updateState">
+        update sale_return_sheet
+        set state = #{state}
+        where id = #{saleReturnSheetId}
+    </update>
+    <update id="updateStateV2">
+        update sale_return_sheet
+        set state = #{state}
+        where id = #{saleReturnSheetId} and state = #{prevState}
+    </update>
+
+    <select id="getLatest" resultMap="SaleReturnSheetPO">
+        select * from sale_return_sheet order by id desc limit 0,1 ;
+    </select>
+    <select id="findAll" resultType="com.nju.edu.erp.model.po.SaleReturnSheetPO">
+        select * from sale_return_sheet;
+    </select>
+    <select id="findAllByState" resultType="com.nju.edu.erp.model.po.SaleReturnSheetPO">
+        select * from sale_return_sheet where state = #{state}
+    </select>
+    <select id="findOneById" resultType="com.nju.edu.erp.model.po.SaleReturnSheetPO">
+        select * from sale_return_sheet where id=#{saleReturnSheetId}
+    </select>
+    <select id="findContentBySaleReturnSheetId" resultType="com.nju.edu.erp.model.po.SaleReturnSheetContentPO">
+        select * from sale_return_sheet_content where sale_return_sheet_id = #{sale_return_sheet_id}
+    </select>
+    <select id="findSheetByTime" resultType="com.nju.edu.erp.model.po.SaleReturnSheetPO">
+        select * from sale_return_sheet where create_time between #{beginDate} and #{endDate}
+    </select>
+
+    <select id="findSheetBySaleSheetId" resultType="com.nju.edu.erp.model.po.SaleReturnSheetPO">
+        select * from sale_return_sheet where sale_sheet_id = #{id};
+    </select>
+
+    <select id="find" resultMap="WarehousePO">
+        select content.id         as id,
+               content.pid        as pid,
+               content.quantity   as quantity,
+               content.sale_price as purchase_price,
+               content.batch_id   as batch_id,
+               sheet.create_time  as production_date
+        from   warehouse_output_sheet         as sheet,
+               warehouse_output_sheet_content as content
+        where  sheet.sale_sheet_id = #{saleSheetId} and
+               content.pid = #{pId}                 and
+               sheet.id = content.wo_id
+    </select>
+
+    <insert id="saveBatch" useGeneratedKeys="true" keyProperty="id">
+        insert into sale_return_sheet_content (sale_return_sheet_id, pid, quantity, unit_price, total_price, remark) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.saleReturnSheetId},#{item.pid},#{item.quantity},#{item.unitPrice},#{item.totalPrice},#{item.remark})
+        </foreach>
+    </insert>
+
+    <resultMap id="SaleReturnSheetPO" type="com.nju.edu.erp.model.po.SaleReturnSheetPO">
+        <id column="id" property="id"></id>
+        <result column="sale_sheet_id" property="saleSheetId"></result>
+        <result column="operator" property="operator"></result>
+        <result column="remark" property="remark"></result>
+        <result column="total_amount" property="totalAmount"></result>
+        <result column="state" property="state"></result>
+        <result column="create_time" property="createTime"></result>
+    </resultMap>
+    <resultMap id="WarehousePO" type="com.nju.edu.erp.model.po.WarehousePO">
+        <id column="id" property="id"></id>
+        <result column="id" property="id"></result>
+        <result column="pid" property="pid"></result>
+        <result column="quantity" property="quantity"></result>
+        <result column="purchase_price" property="purchasePrice"></result>
+        <result column="batch_id" property="batchId"></result>
+        <result column="production_date" property="productionDate"></result>
+    </resultMap>
+</mapper>

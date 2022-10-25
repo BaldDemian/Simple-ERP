@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nju.edu.erp.dao.VoucherDao">
+    <select id="getAllByCustomerId" resultType="com.nju.edu.erp.model.po.VoucherPO">
+        select * from voucher where `customer_id` = #{customerId}
+    </select>
+
+    <select id="getAvailByCustomerId" resultType="com.nju.edu.erp.model.po.VoucherPO">
+        select * from voucher where `customer_id` = #{customerId} and `state` = "可用"
+    </select>
+
+    <insert id="add" useGeneratedKeys="true" keyProperty="id">
+        insert into voucher (customer_id, value, state, remark) values
+        (#{customerId},#{value},#{state},#{remark})
+
+    </insert>
+
+    <update id="use">
+        update voucher
+        set state = "已使用"
+        where id = #{id}
+    </update>
+
+    <select id="getLatestAvailByCustomerId" resultType="com.nju.edu.erp.model.po.VoucherPO">
+        select * from voucher where customer_id=#{id} and state="可用" order by id desc limit 0,1 ;
+    </select>
+</mapper>

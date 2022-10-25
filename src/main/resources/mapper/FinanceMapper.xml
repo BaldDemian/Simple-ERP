@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nju.edu.erp.dao.FinanceDao">
+
+    <insert id="createAccount" parameterType="com.nju.edu.erp.model.po.AccountPO">
+        insert into account(`name`, amount)
+        values(#{name}, #{amount});
+    </insert>
+
+    <delete id="deleteAccount">
+        delete from account where `name` = #{name};
+    </delete>
+
+    <update id="changeAmount" parameterType="com.nju.edu.erp.model.po.AccountPO">
+        update account
+        set amount = #{amount}
+        where `name` = #{name};
+    </update>
+
+    <select id="findByName" resultMap="AccountPO">
+        select `name`, amount
+        from account
+        where `name` = #{name};
+    </select>
+
+    <!--使用%通配符进行模糊查询-->
+    <select id="findByWord" resultMap="AccountPO">
+        select `name`, amount
+        from account
+        where `name` like concat('%', #{word}, '%');
+    </select>
+
+    <resultMap id="AccountPO" type="com.nju.edu.erp.model.po.AccountPO">
+        <result column="name" property="name"/>
+        <result column="amount" property="amount"/>
+    </resultMap>
+
+
+    <select id="getLastCollectSheet" resultType="com.nju.edu.erp.model.po.sheets.CollectSheetPO">
+        select * from collect_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <select id="getLastPaySheet" resultType="com.nju.edu.erp.model.po.sheets.PaySheetPO">
+        select * from pay_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <select id="getLastCashSheet" resultType="com.nju.edu.erp.model.po.sheets.CashSheetPO">
+        select * from cash_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <select id="getLastSalarySheet" resultType="com.nju.edu.erp.model.po.sheets.SalarySheetPO">
+        select * from salary_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <insert id="saveCollectSheet">
+        insert into collect_sheet(`id`, `customer`, `operator`, `total_amount`, `create_time`, `state`)
+        values(#{id}, #{customer}, #{operator}, #{totalAmount}, #{createTime}, #{state});
+    </insert>
+
+    <insert id="savePaySheet">
+        insert into pay_sheet(`id`, `customer`, `operator`, `total_amount`, `create_time`, `state`)
+        values(#{id}, #{customer}, #{operator}, #{totalAmount}, #{createTime}, #{state});
+    </insert>
+
+    <insert id="saveCashSheet">
+        insert into cash_sheet(`id`, `account`, `operator`, `total_amount`, `create_time`, `state`)
+        values(#{id}, #{account}, #{operator}, #{totalAmount}, #{createTime}, #{state})
+    </insert>
+
+    <insert id="saveSalarySheet">
+        insert into salary_sheet(`id`, `employee_id`, `name`, `account`, `raw_salary`, `tax`, `actual_salary`, `create_time`, `state`)
+        values(#{id}, #{employeeId}, #{name}, #{account}, #{rawSalary}, #{tax}, #{actualSalary}, #{createTime}, #{state})
+    </insert>
+
+    <insert id="saveTransferContents">
+        insert into transfer_content(`id`, `account`, `transfer_amount`, `remark`) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.id}, #{item.account}, #{item.transferAmount}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <insert id="saveCashContents">
+        insert into cash_sheet_content(`id`, `name`, `amount`, `remark`) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.id}, #{item.name}, #{item.amount}, #{item.remark})
+        </foreach>
+    </insert>
+
+    <update id="updateCollectSheetState">
+        update collect_sheet
+        set `state` = #{param2}
+        where `id` = #{param1}
+    </update>
+
+    <update id="updatePaySheetState">
+        update pay_sheet
+        set `state` = #{param2}
+        where `id` = #{param1}
+    </update>
+
+    <update id="updateSalarySheetState">
+        update salary_sheet
+        set `state` = #{param2}
+        where `id` = #{param1}
+    </update>
+
+    <select id="findCollectSheetByState" resultType="com.nju.edu.erp.model.po.sheets.CollectSheetPO">
+        select * from collect_sheet where state = #{state};
+    </select>
+
+    <select id="findPaySheetByState" resultType="com.nju.edu.erp.model.po.sheets.PaySheetPO">
+        select * from pay_sheet where state = #{state};
+    </select>
+
+    <select id="findSalarySheetByState" resultType="com.nju.edu.erp.model.po.sheets.SalarySheetPO">
+        select * from salary_sheet where state = #{state};
+    </select>
+
+    <select id="findCollectSheetById" resultType="com.nju.edu.erp.model.po.sheets.CollectSheetPO">
+        select * from collect_sheet where id = #{sheetId};
+    </select>
+
+    <select id="findPaySheetById" resultType="com.nju.edu.erp.model.po.sheets.PaySheetPO">
+        select * from pay_sheet where id = #{sheetId};
+    </select>
+
+    <select id="findSalarySheetById" resultType="com.nju.edu.erp.model.po.sheets.SalarySheetPO">
+        select * from salary_sheet where id = #{sheetId};
+    </select>
+
+    <select id="findCashSheetById" resultType="com.nju.edu.erp.model.po.sheets.CashSheetPO">
+        select * from cash_sheet where id = #{sheetId};
+    </select>
+
+    <select id="getSalarySum" resultType="double">
+        select sum(actual_salary)
+        from salary_sheet
+        where state = '审批完成'
+    </select>
+
+    <select id="getTargetCollectSheet" resultType="com.nju.edu.erp.model.vo.finance.CollectSheetVO">
+        select *
+        from collect_sheet
+        <where>
+            <if test="param1!=null and param2 != null">
+                <!--时间参数不为空-->
+                `create_time` between #{param1} and #{param2}
+                and
+            </if>
+            <if test="param3 != null and param3 != ''">
+                <!--客户参数不为空-->
+                `customer` = #{param3}
+                and
+            </if>
+            <if test="param4 != null and param4 != ''">
+                <!--业务员参数不为空-->
+                `operator` = #{param4}
+                and
+            </if>
+            state = '审批完成'
+        </where>
+    </select>
+
+    <select id="getTargetPaySheet" resultType="com.nju.edu.erp.model.vo.finance.PaySheetVO">
+        select *
+        from pay_sheet
+        <where>
+            <if test="param1!=null and param2 != null">
+                <!--时间参数不为空-->
+                `create_time` between #{param1} and #{param2}
+                and
+            </if>
+            <if test="param3 != null and param3 != ''">
+                <!--客户参数不为空-->
+                `customer` = #{param3}
+                and
+            </if>
+            <if test="param4 != null and param4 != ''">
+                <!--业务员参数不为空-->
+                `operator` = #{param4}
+                and
+            </if>
+            state = '审批完成'
+        </where>
+    </select>
+
+    <select id="getTargetCashSheet" resultType="com.nju.edu.erp.model.vo.finance.CashSheetVO">
+        select *
+        from cash_sheet
+        <where>
+            <if test="param1!=null and param2 != null">
+                <!--时间参数不为空-->
+                `create_time` between #{param1} and #{param2}
+                and
+            </if>
+            <if test="param3 != null and param3 != ''">
+                <!--业务员参数不为空-->
+                `operator` = #{param3}
+                and
+            </if>
+            state = '审批完成'
+        </where>
+    </select>
+
+    <select id="getTargetSalarySheet" resultType="com.nju.edu.erp.model.vo.finance.SalarySheetVO">
+        select *
+        from salary_sheet
+        <where>
+            <if test="param1!=null and param2 != null">
+                <!--时间参数不为空-->
+                `create_time` between #{param1} and #{param2}
+                and
+            </if>
+            state = '审批完成'
+        </where>
+    </select>
+</mapper>

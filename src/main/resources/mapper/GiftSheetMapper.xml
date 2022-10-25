@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nju.edu.erp.dao.GiftSheetDao">
+    <select id="getLatestSheet" resultType="com.nju.edu.erp.model.po.GiftSheetPO">
+        select * from gift_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <insert id="saveBatchSheetContent" useGeneratedKeys="true" keyProperty="id">
+        insert into gift_sheet_content (gift_sheet_id, pid, quantity, remark) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.giftSheetId},#{item.pid},#{item.quantity},#{item.remark})
+        </foreach>
+    </insert>
+
+    <insert id="saveSheet">
+        insert into gift_sheet (id, sale_sheet_id, supplier, operator, remark, `state`, create_time, salesman)
+        values (#{id},#{saleSheetId},#{supplier},#{operator},#{remark}, #{state}, #{createTime}, #{salesman}) ;
+    </insert>
+
+    <select id="findContentBySheetId" resultType="com.nju.edu.erp.model.po.GiftSheetContentPO">
+        select * from gift_sheet_content where gift_sheet_id = #{sheetId};
+    </select>
+
+    <select id="findSheetById" resultType="com.nju.edu.erp.model.po.GiftSheetPO">
+        select * from gift_sheet where id = #{id};
+    </select>
+
+    <select id="findSheetByState" resultType="com.nju.edu.erp.model.po.GiftSheetPO">
+        select * from gift_sheet where state = #{state};
+    </select>
+
+    <update id="updateSheetState">
+        update gift_sheet
+        set state = #{state}
+        where id = #{sheetId}
+    </update>
+
+    <update id="updateSheetStateOnPrev">
+        update gift_sheet
+        set state = #{state}
+        where id = #{giftSheetId} and state = #{prevState}
+    </update>
+
+</mapper>

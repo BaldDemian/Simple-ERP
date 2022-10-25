@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nju.edu.erp.dao.WarehouseOutputSheetDao">
+    <insert id="save" parameterType="WarehouseOutputSheetPO">
+        insert into warehouse_output_sheet (id, operator, create_time, `state`, sale_sheet_id)
+        values (#{id},#{operator},#{createTime},#{state},#{saleSheetId})
+    </insert>
+
+    <delete id="deleteContent">
+        delete from warehouse_output_sheet_content where wo_id = #{sheetId} ;
+    </delete>
+
+    <select id="getLatest" resultMap="WarehouseOutputSheetPO">
+        select * from warehouse_output_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <insert id="saveBatch" useGeneratedKeys="true" keyProperty="id">
+        insert into warehouse_output_sheet_content (wo_id, pid, quantity, sale_price, remark, batch_id) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.woId},#{item.pid},#{item.quantity},#{item.salePrice},#{item.remark},#{item.batchId})
+        </foreach>
+    </insert>
+
+    <update id="updateById">
+        update warehouse_output_sheet set operator = #{operator},
+        sale_sheet_id = #{saleSheetId}, `state` = #{state} where id = #{id};
+    </update>
+
+
+
+    <!--
+    注意：
+    1.结果集与WarehouseIODetailPO对应，格式为：type(有"warehouse_input"和"warehouse_output"两个值),sheet_id,product_name,category_name,quantity,unit_price,total_price,create_time
+    2.出入库单状态必须为"审批完成",才算是完成一次出库或者入库操作
+    -->
+    <select id="getWarehouseIODetailByTime" resultType="com.nju.edu.erp.model.po.WarehouseIODetailPO">
+        select 'warehouse_output'                        as type,
+               sheet.id                                  as sheet_id,
+               product.name                              as product_name,
+               category.name                             as category_name,
+               content.quantity                          as quantity,
+               product.purchase_price                    as unit_price,
+               product.purchase_price * content.quantity as total_price,
+               sheet.create_time                         as create_time
+        from warehouse_output_sheet         as sheet,
+             warehouse_output_sheet_content as content,
+             product,
+             category
+        where sheet.id = content.wo_id          and
+              content.pid = product.id          and
+              product.category_id = category.id and
+              sheet.state = '审批完成'            and
+              sheet.create_time between #{beginTime} and #{endTime}
+    </select>
+    <!--待补充语句：库存查看:一个时间段内的出库数量合计-->
+    <!--
+    注意：
+    2.出库单状态必须为"审批完成",才算是完成一次出库操作
+    -->
+    <select id="getWarehouseOutputProductQuantityByTime" resultType="java.lang.Integer">
+        select sum(content.quantity)
+        from warehouse_output_sheet as sheet,
+             warehouse_output_sheet_content as content
+        where sheet.state = '审批完成'   and
+              sheet.id = content.wo_id and
+              sheet.create_time between #{beginTime} and #{endTime}
+
+    </select>
+
+
+    <select id="getAllSheets" resultType="com.nju.edu.erp.model.po.WarehouseOutputSheetPO">
+        select * from warehouse_output_sheet;
+    </select>
+
+    <select id="getDraftSheets" resultType="com.nju.edu.erp.model.po.WarehouseOutputSheetPO">
+        select * from warehouse_output_sheet where `state` = #{state};
+    </select>
+
+    <select id="getSheet" resultType="com.nju.edu.erp.model.po.WarehouseOutputSheetPO">
+        select * from warehouse_output_sheet where id = #{sheetId};
+    </select>
+
+    <select id="getAllContentById" resultType="com.nju.edu.erp.model.po.WarehouseOutputSheetContentPO">
+        select * from warehouse_output_sheet_content where wo_id = #{sheetId};
+    </select>
+
+    <resultMap id="WarehouseOutputSheetPO" type="com.nju.edu.erp.model.po.WarehouseOutputSheetPO">
+        <id column="id" property="id"></id>
+        <result column="operator" property="operator"></result>
+        <result column="create_time" property="createTime"></result>
+    </resultMap>
+
+    <resultMap id="WarehouseIODetailPO" type="com.nju.edu.erp.model.po.WarehouseIODetailPO">
+        <result column="type" property="type"></result>
+        <result column="sheet_id" property="sheetId"></result>
+        <result column="product_name" property="productName"></result>
+        <result column="category_name" property="categoryName"></result>
+        <result column="quantity" property="quantity"></result>
+        <result column="unit_price" property="unitPrice"></result>
+        <result column="total_price" property="totalPrice"></result>
+        <result column="create_time" property="createTime"></result>
+    </resultMap>
+</mapper>

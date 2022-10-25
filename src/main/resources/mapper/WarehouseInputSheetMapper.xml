@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nju.edu.erp.dao.WarehouseInputSheetDao">
+    <insert id="save" parameterType="WarehouseInputSheetPO">
+        insert into warehouse_input_sheet (id, batch_id, operator, create_time, purchase_sheet_id, state)
+        values (#{id},#{batchId},#{operator},#{createTime},#{purchaseSheetId},#{state})
+    </insert>
+
+    <update id="updateById">
+        update warehouse_input_sheet set batch_id = #{batchId}, operator = #{operator}, create_time = #{createTime},
+        purchase_sheet_id = #{purchaseSheetId}, `state` = #{state} where id = #{id};
+    </update>
+
+
+
+    <select id="getLatest" resultMap="WarehouseInputSheetPO">
+        select * from warehouse_input_sheet order by id desc limit 0,1 ;
+    </select>
+
+    <insert id="saveBatch" useGeneratedKeys="true" keyProperty="id">
+        insert into warehouse_input_sheet_content (wi_id, pid, quantity, purchase_price, production_date, remark) values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.wiId},#{item.pid},#{item.quantity},#{item.purchasePrice},#{item.productionDate},#{item.remark})
+        </foreach>
+    </insert>
+
+    <select id = "getDraftSheets" resultMap = "WarehouseInputSheetPO">
+        select * from warehouse_input_sheet where `state` = #{state};
+    </select>
+
+    <select id = "getAllSheets" resultMap="WarehouseInputSheetPO">
+        select * from warehouse_input_sheet;
+    </select>
+
+    <select id="getSheet" resultType="com.nju.edu.erp.model.po.WarehouseInputSheetPO">
+        select * from warehouse_input_sheet where id = #{id} ;
+    </select>
+
+    <select id="getAllContentById" resultType="com.nju.edu.erp.model.po.WarehouseInputSheetContentPO">
+        select * from warehouse_input_sheet_content where wi_id = #{warehouseInputSheetId} ;
+    </select>
+
+
+
+
+<!--待补充语句：库存查看：查询指定时间段内出/入库数量/金额/商品信息/分类信息-->
+<!--
+注意：
+1.结果集与WarehouseIODetailPO对应，格式为：type(有"warehouse_input"和"warehouse_output"两个值),sheet_id,product_name,category_name,quantity,unit_price,total_price,create_time
+2.出入库单状态必须为"审批完成",才算是完成一次出库或者入库操作
+-->
+    <select id="getWarehouseIODetailByTime" resultType="com.nju.edu.erp.model.po.WarehouseIODetailPO">
+        select 'warehouse_input'                         as type,
+               sheet.id                                  as sheet_id,
+               product.name                              as product_name,
+               category.name                             as category_name,
+               content.quantity                          as quantity,
+               product.purchase_price                    as unit_price,
+               product.purchase_price * content.quantity as total_price,
+               sheet.create_time                         as create_time
+        from warehouse_input_sheet         as sheet,
+             warehouse_input_sheet_content as content,
+             product,
+             category
+        where sheet.id = content.wi_id          and
+              content.pid = product.id          and
+              product.category_id = category.id and
+              sheet.state = '审批完成'            and
+              sheet.create_time between #{beginTime} and #{endTime}
+    </select>
+
+
+
+
+
+<!--待补充语句：库存查看:一个时间段内的入库数量合计-->
+<!--
+注意：
+2.入库单状态必须为"审批完成",才算是完成一次入库操作
+-->
+    <select id="getWarehouseInputProductQuantityByTime" resultType="java.lang.Integer">
+        select sum(content.quantity)
+        from warehouse_input_sheet as sheet,
+             warehouse_input_sheet_content as content
+        where sheet.state = '审批完成'   and
+              sheet.id = content.wi_id and
+              sheet.create_time between #{beginTime} and #{endTime}
+    </select>
+
+
+
+    <resultMap id="WarehouseInputSheetPO" type="com.nju.edu.erp.model.po.WarehouseInputSheetPO">
+        <id column="id" property="id"></id>
+        <result column="batch_id" property="batchId"></result>
+        <result column="operator" property="operator"></result>
+        <result column="create_time" property="createTime"></result>
+        <result column="purchase_sheet_id" property="purchaseSheetId"></result>
+        <result column="state" property="state"></result>
+    </resultMap>
+
+    <resultMap id="WarehouseIODetailPO" type="com.nju.edu.erp.model.po.WarehouseIODetailPO">
+        <result column="type" property="type"></result>
+        <result column="sheet_id" property="sheetId"></result>
+        <result column="product_name" property="productName"></result>
+        <result column="category_name" property="categoryName"></result>
+        <result column="quantity" property="quantity"></result>
+        <result column="unit_price" property="unitPrice"></result>
+        <result column="total_price" property="totalPrice"></result>
+        <result column="create_time" property="createTime"></result>
+    </resultMap>
+
+</mapper>
